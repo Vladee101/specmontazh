@@ -1,0 +1,27 @@
+{
+  "name": "sm-to",
+  "private": true,
+  "description": "Модуль контроля ТО слаботочных систем (ООО НПО «Спецмонтаж»)",
+  "type": "module",
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "npm run dev --workspace apps/api",
+    "dev:web": "npm run dev --workspace apps/web",
+    "build": "npm run build --workspace apps/api && npm run build --workspace apps/web",
+    "test": "npm test --workspace apps/api",
+    "typecheck": "npm run typecheck --workspaces",
+    "db:migrate": "npm run db:migrate --workspace apps/api",
+    "db:seed": "npm run db:seed --workspace apps/api",
+    "db:test": "psql -d \"$DATABASE_URL\" -f db/schema_test.sql"
+  },
+  "devDependencies": {
+    "concurrently": "10.0.6"
+  }
+}

@@ -1,0 +1,16 @@
+[Unit]
+Description=Specmontazh TO: генерация заданий по регламентам
+After=postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=oneshot
+User=smto
+Group=smto
+WorkingDirectory=/opt/sm-to
+EnvironmentFile=/opt/sm-to/.env
+ExecStart=/usr/bin/node apps/api/dist/scheduler.js
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true

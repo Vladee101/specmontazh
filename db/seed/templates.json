@@ -1,0 +1,43 @@
+{
+  "_comment": "Четыре шаблона чек-листов для первоначального заполнения (npm run db:seed). Содержание пунктов — пример по макетам; реальные проверки согласует организация. equipment_type_filter: null — все типы оборудования системы.",
+  "templates": [
+    {
+      "system_type": "fire_alarm",
+      "name": "ТО пожарной сигнализации",
+      "items": [
+        { "section_name": "Прибор", "check_text": "Состояние приёмно-контрольного прибора", "target_type": "equipment", "equipment_type_filter": ["Приёмно-контрольный прибор"], "is_required": true },
+        { "section_name": "Извещатели", "check_text": "Срабатывание извещателей", "target_type": "equipment", "equipment_type_filter": ["Извещатель"], "is_required": true },
+        { "section_name": "Питание", "check_text": "Резервное питание, автоматический переход", "target_type": "system", "equipment_type_filter": null, "is_required": true }
+      ]
+    },
+    {
+      "system_type": "evacuation_alert",
+      "name": "ТО СОУЭ",
+      "items": [
+        { "section_name": "Оповещатели", "check_text": "Проверка оповещателей", "target_type": "equipment", "equipment_type_filter": ["Оповещатель"], "is_required": true },
+        { "section_name": "Усилитель", "check_text": "Резервное питание усилителя", "target_type": "equipment", "equipment_type_filter": ["Усилитель"], "is_required": true },
+        { "section_name": "Система", "check_text": "Автоматический запуск оповещения", "target_type": "system", "equipment_type_filter": null, "is_required": true }
+      ]
+    },
+    {
+      "system_type": "security_alarm",
+      "name": "ТО охранной сигнализации",
+      "items": [
+        { "section_name": "Прибор", "check_text": "Постановка и снятие с охраны", "target_type": "system", "equipment_type_filter": null, "is_required": true },
+        { "section_name": "Извещатели", "check_text": "Срабатывание извещателей", "target_type": "equipment", "equipment_type_filter": ["Извещатель"], "is_required": true },
+        { "section_name": "Связь", "check_text": "Передача тестовых событий", "target_type": "system", "equipment_type_filter": null, "is_required": true }
+      ]
+    },
+    {
+      "system_type": "video_surveillance",
+      "name": "ТО видеонаблюдения",
+      "items": [
+        { "section_name": "Видеорегистратор", "check_text": "Запись и воспроизведение архива", "target_type": "equipment", "equipment_type_filter": ["Видеорегистратор"], "is_required": true },
+        { "section_name": "Видеорегистратор", "check_text": "Состояние накопителей", "target_type": "equipment", "equipment_type_filter": ["Видеорегистратор"], "is_required": true },
+        { "section_name": "Камеры", "check_text": "Наличие изображения с камер", "target_type": "equipment", "equipment_type_filter": ["Камера"], "is_required": true },
+        { "section_name": "Камеры", "check_text": "Качество изображения и зона обзора", "target_type": "equipment", "equipment_type_filter": ["Камера"], "is_required": true },
+        { "section_name": "Питание", "check_text": "Работа ИБП и электропитания", "target_type": "system", "equipment_type_filter": null, "is_required": false }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+[Unit]
+Description=Specmontazh TO: резервная копия БД
+After=postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=oneshot
+User=smto
+Group=smto
+ExecStart=/opt/sm-to/deploy/backup.sh
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/backups/sm-to
+ProtectHome=true
+PrivateTmp=true
