@@ -108,7 +108,7 @@ export async function seedDemo(db: Db, password: string, timeZone: string): Prom
         const reg = await trx
           .insertInto('maintenance_regulation')
           .values({
-            system_id: sys.id, template_id: tpl.id, created_by_id: managerId, name: `ТО: ${s.name.toLowerCase()}`,
+            system_id: sys.id, template_id: tpl.id, created_by_id: managerId, name: `ТО: ${s.name}`,
             interval_value: s.interval, schedule_anchor_date: due, next_due_date: due, status: 'active', activated_at: new Date(),
           })
           .returning('id')

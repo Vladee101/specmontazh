@@ -181,6 +181,7 @@ PostgreSQL 16, 13 таблиц из `model_mvp.json` и служебная `sess
 | `/objects/{id}`, `/systems/{id}`, `/equipment/{id}` | DELETE пустой карточки | Руководитель |
 | `/objects/{id}/archive`, `/systems/{id}/archive` | POST | Руководитель |
 | `/equipment/{id}/decommission` | POST с датой и причиной | Руководитель |
+| `/equipment-types` | GET: допустимые типы оборудования (набор проверяет приложение) | Руководитель, инженер |
 | `/regulations`, `/regulations/{id}` | GET, POST, PATCH | Руководитель |
 | `/regulations/{id}/activate` | POST: `draft` → `active`, сразу запускает генерацию | Руководитель |
 | `/regulations/{id}/pause`, `/resume` | POST; при возобновлении задаётся `next_due_date` | Руководитель |

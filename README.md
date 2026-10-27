@@ -4,7 +4,7 @@
 
 Заказчик: ООО НПО «Спецмонтаж». Проект выполняется как дипломная работа, некоммерческий. Требования: ТЗ «MVP 1.2 от 24.10.2026» (оно главнее любых более ранних черновиков).
 
-> **Статус.** Готовы: схема БД с тестами, спецификация (редакция 2.0), макеты экранов. Кода приложения пока нет. Разделы ниже, помеченные **[план]**, описывают принятые решения, а не существующие команды.
+> **Статус.** Реализованы API, планировщик и интерфейс по макетам для всех трёх ролей; 55 тестов Vitest и 131 тест схемы проходят. Не сделано: замер производительности на стенде 100/5000/10000 и развёртывание этапа 2 на сервере.
 
 ## Что делает система
 
@@ -61,8 +61,6 @@
 
 ## Структура репозитория
 
-Целевая, **[план]**:
-
 ```
 .
 ├── README.md
@@ -77,8 +75,16 @@
 │   └── seed/                   # 4 шаблона чек-листов, пример данных
 ├── apps/
 │   ├── api/                    # Fastify + zod + Kysely
-│   │   └── src/{routes,services,db,scheduler}
+│   │   ├── src/
+│   │   │   ├── server.ts, scheduler.ts, migrate.ts, seed.ts   # команды (точки входа)
+│   │   │   ├── routes/         # обработчики API по разделам
+│   │   │   ├── services/       # генерация заданий, команды заданий, отчёт
+│   │   │   ├── http/           # сессии, CSRF, ошибки, общие схемы zod
+│   │   │   ├── db/             # типы таблиц, миграции, seed, демо-данные
+│   │   │   └── lib/            # даты, CSV, пароли, справочники
+│   │   └── test/               # Vitest: AT-01–AT-22 уровня API и планировщика
 │   └── web/                    # React + Vite
+│       └── src/pages/          # экраны по макетам
 ├── deploy/
 │   ├── nginx/                  # сайт specmontazh.online: bootstrap (HTTP) и итоговый (HTTPS), заголовки прокси
 │   ├── systemd/                # служба API, таймеры планировщика и резервных копий
@@ -87,7 +93,7 @@
 └── .env.example
 ```
 
-Сейчас в наличии: `schema.sql`, `schema_test.sql`, ТЗ (`Zadanie_razrabotchiku_MVP_v1_2.pdf`), материалы заказчика (`Diplom_MVP_v1_2.zip`), макеты, `deploy/`, `.env.example`.
+`db/migrations/0001_init.sql` — копия `db/schema.sql`. Следующие изменения схемы — новыми файлами `0002_…sql`; `schema.sql` обновляется вместе с ними как полный эталон.
 
 ## База данных
 
@@ -97,36 +103,59 @@
 
 ```bash
 createdb sm_to_dev
-psql -d sm_to_dev -v ON_ERROR_STOP=1 -f schema.sql
-psql -d sm_to_dev -f schema_test.sql    # ожидается итог: 131 | 0 | 131 (всего | упало | прошло)
+psql -d sm_to_dev -v ON_ERROR_STOP=1 -f db/schema.sql
+psql -d sm_to_dev -f db/schema_test.sql    # ожидается: пустая таблица «Расхождения», итог 131 | 0 | 131
 ```
 
 Каждый тест выполняется в подтранзакции и откатывается, данные не остаются. Запускать тесты на отдельной БД, не на рабочей.
 
 ## Планировщик
 
-Запускается раз в сутки в 00:10 по Europe/Moscow командой приложения `node apps/api/dist/scheduler.js` **[план]**. Запуск делает таймер `deploy/systemd/sm-to-scheduler.timer`. Время сервера UTC, поэтому часовой пояс указан в самом таймере (`OnCalendar=… Europe/Moscow`). `Persistent=true` выполняет пропущенный запуск после перезагрузки. Журнал запусков:
+Запускается раз в сутки в 00:10 по Europe/Moscow командой приложения `node apps/api/dist/scheduler.js`. Запуск делает таймер `deploy/systemd/sm-to-scheduler.timer`. Время сервера UTC, поэтому часовой пояс указан в самом таймере (`OnCalendar=… Europe/Moscow`). `Persistent=true` выполняет пропущенный запуск после перезагрузки. Журнал запусков:
 
 ```bash
 journalctl -u sm-to-scheduler
 ```
 
-Та же функция генерации вызывается из API сразу после активации регламента.
+Та же функция генерации вызывается из API сразу после активации и возобновления регламента, в той же транзакции: если чек-лист пуст, активация откатывается. Ошибка одного регламента не мешает остальным; при ошибках команда завершается с кодом 1, и systemd отмечает запуск как неудачный. Заодно удаляются сессии, простой которых превысил 8 часов.
+
+Ручной запуск на сервере (например, после восстановления из копии):
+
+```bash
+systemctl start sm-to-scheduler && journalctl -u sm-to-scheduler -n 20
+```
 
 Алгоритм: для каждого активного регламента найти плановые даты, попадающие в окно 5 дней вперёд, и создать недостающие задания с копией пунктов шаблона и списка оборудования. Повторный запуск безопасен: дубли отсекаются уникальным ключом в БД. Месяцы считаются от опорной даты: 31 января → 28 февраля → 31 марта. Приостановленные регламенты пропускаются, пропущенные за паузу задания не восполняются.
 
-## Локальный запуск **[план]**
+## Локальный запуск
 
-Требования: Node.js 22 LTS, PostgreSQL 16 (локально установленный или `docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=sm_to postgres:16`).
+Требования: Node.js 22 или новее, PostgreSQL 16 (подойдёт и более новый).
 
 ```bash
-cp .env.example .env     # DATABASE_URL поменять на локальный, NODE_ENV=development
 npm install
-npm run db:migrate
-npm run db:seed          # 4 шаблона чек-листов
-npm run dev              # api :3000, web :5173
-npm test                 # Vitest
 ```
+
+Файл `.env` в корне (в git не попадает):
+
+```ini
+NODE_ENV=development
+DATABASE_URL=postgresql://postgres@localhost:5432/sm_to_dev
+TZ=Europe/Moscow
+ADMIN_LOGIN=admin
+ADMIN_PASSWORD=admin-pass-1
+DEMO_PASSWORD=demo-pass-1
+```
+
+```bash
+createdb sm_to_dev
+npm run db:migrate
+npm run db:seed -- --demo   # 4 шаблона, администратор и демо-данные
+npm run dev                 # API :3010, интерфейс http://127.0.0.1:5173
+```
+
+Демо-данные: руководитель `m.petrov`, инженеры `a.sokolov` и `d.orlov` (пароль из `DEMO_PASSWORD`), четыре объекта из макетов, действующие регламенты и задания на ближайшие дни. Без `--demo` создаются только шаблоны и администратор. В разработке Vite проксирует `/api` на API, поэтому интерфейс и API работают на одном origin, как за nginx.
+
+Генерация заданий вручную: `npm run scheduler --workspace apps/api`.
 
 Переменные окружения (`.env.example`):
 
@@ -137,11 +166,13 @@ npm test                 # Vitest
 | `APP_ORIGIN` | origin фронтенда для проверки `Origin` (CSRF); CORS не нужен, SPA и API на одном домене |
 | `TZ` | `Europe/Moscow` |
 | `SCHEDULER_HORIZON_DAYS` | горизонт генерации, 5 |
-| `ADMIN_LOGIN`, `ADMIN_PASSWORD` | первый администратор при начальном наполнении; после него удалить |
+| `ADMIN_LOGIN`, `ADMIN_PASSWORD`, `ADMIN_FULL_NAME` | первый администратор при начальном наполнении; после него удалить |
+| `DEMO_PASSWORD` | пароль демо-пользователей для `seed --demo`; на рабочем сервере не нужен |
+| `SESSION_IDLE_HOURS`, `LOGIN_RATE_LIMIT`, `TRUST_PROXY`, `LOG_LEVEL` | необязательные: простой сессии (8), попыток входа в минуту (10), адрес прокси (127.0.0.1), уровень журнала (info) |
 
 Секреты в репозиторий не попадают. Отдельный секрет подписи cookie не нужен: токен сессии случайный, в БД хранится его хеш.
 
-## Развёртывание на VPS **[план]**
+## Развёртывание на VPS
 
 Сервер общий с другими проектами: Ubuntu 24.04, nginx на 80/443, PostgreSQL 16 и Node 22 уже установлены, Docker нет. Проект встраивается рядом, ничего общего не меняя: своя БД и роль в общем PostgreSQL, свой системный пользователь, API на `127.0.0.1:3010`, свой сайт в nginx. Системный часовой пояс (UTC) не трогаем.
 
@@ -195,15 +226,16 @@ certbot --nginx --redirect -d specmontazh.online -d www.specmontazh.online
 rm -rf /opt/sm-to
 
 # код
-git clone <repo> /opt/sm-to && chown -R smto:smto /opt/sm-to && chmod +x /opt/sm-to/deploy/*.sh
+git clone https://github.com/Vladee101/specmontazh.git /opt/sm-to && chown -R smto:smto /opt/sm-to
 cd /opt/sm-to && cp .env.example .env && chmod 600 .env && chown smto:smto .env
 nano .env
 
-# сборка и миграции от имени smto
+# сборка и миграции от имени smto; --env-file передаёт настройки из .env
 sudo -u smto npm ci
 sudo -u smto npm run build
-sudo -u smto node apps/api/dist/migrate.js
-sudo -u smto node apps/api/dist/seed.js     # 4 шаблона и первый администратор
+sudo -u smto node --env-file=.env apps/api/dist/migrate.js
+sudo -u smto node --env-file=.env apps/api/dist/seed.js     # 4 шаблона и первый администратор
+nano .env                                                    # удалить ADMIN_PASSWORD
 
 # службы
 cp deploy/systemd/sm-to-* /etc/systemd/system/
@@ -211,13 +243,17 @@ systemctl daemon-reload
 systemctl enable --now sm-to-api sm-to-scheduler.timer sm-to-backup.timer
 ```
 
-В `sm-to-api.service` путь `/usr/bin/node`; проверить его командой `command -v node`.
+В `sm-to-api.service` путь `/usr/bin/node`; проверить его командой `command -v node`. Проверка после запуска:
+
+```bash
+systemctl status sm-to-api --no-pager && curl -s https://specmontazh.online/api/health
+```
 
 Обновление:
 
 ```bash
 cd /opt/sm-to && sudo -u smto git pull && sudo -u smto npm ci && sudo -u smto npm run build
-sudo -u smto node apps/api/dist/migrate.js && systemctl restart sm-to-api
+sudo -u smto node --env-file=.env apps/api/dist/migrate.js && systemctl restart sm-to-api
 ```
 
 Логи API: `journalctl -u sm-to-api -f`.
@@ -234,7 +270,9 @@ scp root@<IP>:/var/backups/sm-to/*.dump .
 
 ## API
 
-Префикс `/api/v1`. Единый формат ошибок: HTTP-код (400, 401, 403, 404, 409) и тело `{ code, message, field_errors }`. Таблица методов — в спецификации, раздел 9.
+Префикс `/api/v1`. Единый формат ошибок: HTTP-код (400, 401, 403, 404, 409, 429) и тело `{ code, message, field_errors }`, при необходимости `details` (например, список заданий, блокирующих архив). Таблица методов — в спецификации, раздел 9. Проверка работоспособности: `GET /api/health`.
+
+Изменяющие запросы требуют заголовок `X-CSRF-Token` (значение приходит в ответе `/auth/login` и `/auth/me`) и принимают текущую `version` записи.
 
 ## Отчёт и CSV
 
@@ -246,7 +284,21 @@ scp root@<IP>:/var/backups/sm-to/*.dump .
 
 ## Тестирование
 
-Тесты приёмки AT-01–AT-22 разнесены по уровням: БД (`schema_test.sql`), API и планировщик (Vitest). Таблица соответствия — в спецификации, раздел 12.
+Тесты приёмки AT-01–AT-22 разнесены по уровням: БД (`db/schema_test.sql`), API и планировщик (Vitest, `apps/api/test`). Таблица соответствия — в спецификации, раздел 12.
+
+```bash
+npm test
+```
+
+Vitest пересоздаёт тестовую БД из `TEST_DATABASE_URL` (по умолчанию `postgresql://postgres@localhost:54329/sm_to_test`) и применяет миграции. Имя базы обязано заканчиваться на `_test`: так тест не удалит рабочую базу. Каждый тест очищает таблицы и заново наполняет шаблоны.
+
+| Файл | Что проверяет |
+|---|---|
+| `auth.test.ts` | вход, сессии, CSRF, блокировка (AT-21), правила пользователей |
+| `scheduler.test.ts` | генерация (AT-03–06, 08), архив (AT-16), шаблоны (AT-22) |
+| `tasks.test.ts` | доступ (AT-01, 02), выполнение и приёмка (AT-07, 09–15, 18) |
+| `report.test.ts` | нарушение срока (AT-17), отчёт и CSV (AT-19, 20) |
+| `dates.test.ts` | даты и месяцы (AT-06), CSV, пароли |
 
 ## Документы
 
@@ -261,7 +313,7 @@ scp root@<IP>:/var/backups/sm-to/*.dump .
 
 Подробный список — в спецификации, раздел 13. Главные:
 
-1. Список типов оборудования (`equipment_type`) должен прислать заказчик; пока это непустой текст.
+1. Список типов оборудования (`equipment_type`) должен прислать заказчик; пока это начальный список по макетам в `apps/api/src/lib/labels.ts`.
 2. Определение «нарушение срока» в `v_task_report` — предложение, нужно подтверждение заказчика: просрочено сейчас, срок перенесён после истечения прежнего, либо фактическая дата позже текущего срока.
 3. Содержание пунктов шаблонов — пример, реальные проверки согласует организация.
 
