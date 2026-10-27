@@ -8,3 +8,6 @@ coverage/
 .npm/
 .DS_Store
 Thumbs.db
+
+# Материалы заказчика (ТЗ, архив) — не публикуются
+docs/tz/
