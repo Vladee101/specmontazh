@@ -4,6 +4,7 @@ import { todayMsk } from '../format';
 import { SYSTEM_TYPE_LABELS, SYSTEM_TYPES, type SystemType } from '../labels';
 import type { Equipment, LcSystem, ServiceObject } from '../types';
 import { Field, Modal, useFieldErrors, useFormState, useLoad } from '../ui';
+import { DateInput } from '../DateInput';
 
 export function ObjectDialog({ object, onClose, onSaved }: { object?: ServiceObject; onClose(): void; onSaved(o: ServiceObject): void }) {
   const [v, set] = useFormState({
@@ -148,7 +149,7 @@ export function EquipmentDialog({ systemId, equipment, onClose, onSaved }: { sys
             <input value={v.location} onChange={(x) => set('location', x.target.value)} />
           </Field>
           <Field label="Дата установки" error={e.of('installed_on')}>
-            <input type="date" value={v.installed_on} onChange={(x) => set('installed_on', x.target.value)} />
+            <DateInput value={v.installed_on} onChange={(d) => set('installed_on', d)} />
           </Field>
         </div>
       </fieldset>
@@ -175,7 +176,7 @@ export function DecommissionDialog({ equipment, onClose, onSaved }: { equipment:
       onSubmit={() => e.run(async () => onSaved(await api.post<Equipment>(`/equipment/${equipment.id}/decommission`, { ...v, version: equipment.version })))}
     >
       <Field label="Дата вывода" error={e.of('decommissioned_on')}>
-        <input type="date" value={v.decommissioned_on} onChange={(x) => set('decommissioned_on', x.target.value)} />
+        <DateInput value={v.decommissioned_on} onChange={(d) => set('decommissioned_on', d)} />
       </Field>
       <Field label="Причина" error={e.of('reason')}>
         <textarea value={v.reason} onChange={(x) => set('reason', x.target.value)} placeholder="Например, физический износ" />

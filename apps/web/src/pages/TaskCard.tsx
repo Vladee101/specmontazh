@@ -8,6 +8,7 @@ import { RESULT_COLORS, RESULT_LABELS, SYSTEM_TYPE_LABELS, OPEN_STATUSES } from 
 import type { Engineer, TaskDetail } from '../types';
 import { Badge, Details, ErrorBox, Field, Heading, Loading, Modal, Shell, StatusBadge, useFieldErrors, useLoad, useToast } from '../ui';
 import { TaskHistory } from './TaskHistory';
+import { DateInput } from '../DateInput';
 
 type Dialog = 'assign' | 'reschedule' | 'cancel' | 'return' | 'accept' | null;
 
@@ -280,7 +281,7 @@ function RescheduleDialog({ task, onClose, onDone, onConflict }: DialogProps) {
         Исходная дата: {fmtDate(task.original_due_date)} · текущая: {fmtDate(task.current_due_date)}
       </p>
       <Field label="Новый срок" error={errors.of('new_due_date')}>
-        <input type="date" min={todayMsk()} value={date} onChange={(e) => setDate(e.target.value)} />
+        <DateInput min={todayMsk()} value={date} onChange={setDate} />
       </Field>
       <Field label="Причина переноса" error={errors.of('reason')}>
         <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Например, нет доступа к объекту" />

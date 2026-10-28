@@ -7,6 +7,7 @@ import { fmtDate, fmtMoment, todayMsk } from '../format';
 import { COMMENT_HINTS, RESULT_COLORS, RESULT_LABELS, SYSTEM_TYPE_LABELS, type CheckResult } from '../labels';
 import type { TaskDetail } from '../types';
 import { Badge, Details, ErrorBox, Heading, Loading, Shell, StatusBadge, useLoad, useToast } from '../ui';
+import { DateInput } from '../DateInput';
 
 type Draft = Record<number, { result: CheckResult | ''; comment: string }>;
 
@@ -234,7 +235,7 @@ export function Checklist() {
           <div className="sm-panel sm-pad" style={{ marginTop: 18 }}>
             <label>
               Фактическая дата выполнения
-              <input type="date" min={created} max={today} value={actual} onChange={(e) => setActual(e.target.value)} className={actual && !state.dateOk ? 'sm-invalid' : ''} />
+              <DateInput min={created} max={today} value={actual} onChange={setActual} className={actual && !state.dateOk ? 'sm-invalid' : ''} />
             </label>
             <p className="sm-small" style={{ marginTop: 6, color: (actual && !state.dateOk) || fieldErrors.actual_performed_on ? 'var(--sm-red)' : 'var(--sm-muted)' }}>
               {fieldErrors.actual_performed_on ?? (actual && !state.dateOk ? 'Дата в будущем или раньше создания задания: отправка запрещена.' : `Не в будущем и не раньше создания задания (${fmtDate(created)}).`)}

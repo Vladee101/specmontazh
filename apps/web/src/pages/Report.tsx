@@ -5,6 +5,7 @@ import { fmtDate, monthRange, todayMsk } from '../format';
 import { STATUS_LABELS, STATUSES, SYSTEM_TYPE_LABELS, SYSTEM_TYPES, type SystemType, type TaskStatus } from '../labels';
 import type { Engineer, ServiceObject } from '../types';
 import { Badge, ErrorBox, Heading, Loading, Shell, StatusBadge, Table, useLoad } from '../ui';
+import { DateInput } from '../DateInput';
 
 interface ReportRow {
   id: number;
@@ -80,11 +81,11 @@ export function Report() {
         <div className="sm-fieldgrid">
           <label>
             Исходная плановая дата: с
-            <input type="date" value={f.date_from} onChange={set('date_from')} />
+            <DateInput value={f.date_from} onChange={(d) => setF({ ...f, date_from: d })} />
           </label>
           <label>
             по
-            <input type="date" value={f.date_to} onChange={set('date_to')} />
+            <DateInput value={f.date_to} onChange={(d) => setF({ ...f, date_to: d })} />
           </label>
           <label>
             Объект

@@ -5,6 +5,7 @@ import { fmtDate } from '../format';
 import { STATUS_LABELS, STATUSES, SYSTEM_TYPE_LABELS, SYSTEM_TYPES } from '../labels';
 import type { Engineer, ServiceObject, TaskListItem } from '../types';
 import { ErrorBox, Heading, Loading, Pager, Shell, StatusBadge, Table, Tabs, useLoad } from '../ui';
+import { DateInput } from '../DateInput';
 
 const VIEWS = [
   ['all', 'Все задания'],
@@ -88,10 +89,10 @@ export function Tasks() {
           ))}
         </select>
         <label className="sm-inline">
-          Исходный срок с <input type="date" value={filter.due_from} onChange={(e) => set('due_from', e.target.value)} />
+          Исходный срок с <DateInput value={filter.due_from} onChange={(d) => set('due_from', d)} />
         </label>
         <label className="sm-inline">
-          по <input type="date" value={filter.due_to} onChange={(e) => set('due_to', e.target.value)} />
+          по <DateInput value={filter.due_to} onChange={(d) => set('due_to', d)} />
         </label>
       </div>
 

@@ -5,6 +5,7 @@ import { addDays, fmtDate, todayMsk } from '../format';
 import { intervalLabel, REG_STATUS_LABELS, SYSTEM_TYPE_LABELS, SYSTEM_TYPES, systemTitle } from '../labels';
 import type { LcSystem, Regulation, ServiceObject } from '../types';
 import { Badge, ErrorBox, Field, Heading, Loading, Modal, Shell, Table, useFieldErrors, useFormState, useLoad, useToast } from '../ui';
+import { DateInput } from '../DateInput';
 
 type Dialog = { kind: 'new' } | { kind: 'edit' | 'activate' | 'resume' | 'pause'; reg: Regulation } | null;
 
@@ -198,7 +199,7 @@ function RegulationForm({ reg, onClose, onSaved }: { reg?: Regulation; onClose()
       </Field>
       <div className="sm-fieldgrid">
         <Field label="Ближайшая дата ТО" error={e.of('first_due_date')}>
-          <input type="date" min={todayMsk()} value={v.first_due_date} disabled={!isDraft} onChange={(x) => set('first_due_date', x.target.value)} />
+          <DateInput min={todayMsk()} value={v.first_due_date} disabled={!isDraft} onChange={(d) => set('first_due_date', d)} />
         </Field>
         <Field label="Периодичность, месяцев" error={e.of('interval_value')}>
           <input type="number" min={1} max={120} value={v.interval_value} disabled={reg?.status === 'active'} onChange={(x) => set('interval_value', x.target.value)} />
@@ -254,7 +255,7 @@ function ResumeDialog({ reg, onClose, onDone }: { reg: Regulation; onClose(): vo
       }
     >
       <Field label="Новая ближайшая дата ТО" error={e.of('next_due_date')}>
-        <input type="date" min={todayMsk()} value={date} onChange={(x) => setDate(x.target.value)} />
+        <DateInput min={todayMsk()} value={date} onChange={setDate} />
       </Field>
       <p className="sm-muted sm-small">Период паузы не восполняется: задания за время паузы не создаются. Опорная дата сбрасывается на заданную.</p>
     </Modal>
