@@ -1,7 +1,7 @@
 // UC 20: отчёт и CSV; AT-17, AT-19, AT-20.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { addDays } from '../src/lib/dates.js';
-import { CSV_HEADER } from '../src/services/report.js';
+import { CSV_COLUMNS, CSV_HEADER, type CsvColumn } from '../src/services/report.js';
 import { createScenario, driveToReview, expectStatus, loginAs, resetDb, setupEnv, type Client, type TestEnv } from './helpers.js';
 
 let env: TestEnv;
@@ -63,13 +63,16 @@ describe('отчёт', () => {
     expect(csv.text.charCodeAt(0)).toBe(0xfeff);
     const rows = parseCsv(csv.text);
     expect(rows[0]).toEqual([...CSV_HEADER]);
+    expect(rows[0]![0]).toBe('Номер задания');
     expect(rows).toHaveLength(3);
-    const col = (name: string) => CSV_HEADER.indexOf(name as never);
+    const col = (key: CsvColumn) => CSV_COLUMNS.findIndex(([k]) => k === key);
     const rowA = rows[1]!;
     expect(rowA[col('status')]).toBe('Принято');
     expect(rowA[col('original_due_date')]).toBe(addDays(env.today, 1));
     expect(rowA[col('current_due_date')]).toBe(addDays(env.today, 40));
     expect(rowA[col('remarks')]).toContain('Стекло камеры загрязнено');
+    expect(rowA[col('system_type')]).toBe('Видеонаблюдение');
+    expect(rowA[col('is_partial')]).toBe('Нет');
     expect(rowA[col('accepted_at')]).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
     const rowB = rows[2]!;
     expect(rowB[col('status')]).toBe('Отменено');

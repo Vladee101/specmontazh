@@ -5,7 +5,7 @@ import type { Db } from '../db/index.js';
 import type { SystemType, TaskStatus } from '../db/types.js';
 import { toCsv } from '../lib/csv.js';
 import { dateTimeIn } from '../lib/dates.js';
-import { TASK_STATUS_LABELS } from '../lib/labels.js';
+import { SYSTEM_TYPE_LABELS, TASK_STATUS_LABELS } from '../lib/labels.js';
 
 export interface ReportFilter {
   date_from?: string;
@@ -68,11 +68,32 @@ export function reportSummary(rows: ReportRow[]) {
   };
 }
 
-export const CSV_HEADER = [
-  'task_number', 'object_name', 'customer_name', 'address', 'system_name', 'system_type',
-  'engineer_name', 'status', 'original_due_date', 'current_due_date', 'actual_performed_on', 'accepted_at',
-  'is_overdue', 'has_deadline_violation', 'is_partial', 'remarks', 'review_comment', 'cancellation_reason',
+/** Столбцы CSV: ключ (для тестов и описания) и русский заголовок для Excel. */
+export const CSV_COLUMNS = [
+  ['task_number', 'Номер задания'],
+  ['object_name', 'Объект'],
+  ['customer_name', 'Заказчик'],
+  ['address', 'Адрес'],
+  ['system_name', 'Система'],
+  ['system_type', 'Тип системы'],
+  ['engineer_name', 'Исполнитель'],
+  ['status', 'Статус'],
+  ['original_due_date', 'Исходный срок'],
+  ['current_due_date', 'Текущий срок'],
+  ['actual_performed_on', 'Фактическая дата'],
+  ['accepted_at', 'Принято'],
+  ['is_overdue', 'Просрочено'],
+  ['has_deadline_violation', 'Нарушение срока'],
+  ['is_partial', 'Частичный результат'],
+  ['remarks', 'Замечания'],
+  ['review_comment', 'Комментарий при возврате'],
+  ['cancellation_reason', 'Причина отмены'],
 ] as const;
+
+export type CsvColumn = (typeof CSV_COLUMNS)[number][0];
+export const CSV_HEADER = CSV_COLUMNS.map(([, title]) => title);
+
+const yesNo = (v: boolean) => (v ? 'Да' : 'Нет');
 
 export function reportCsv(rows: ReportRow[], timeZone: string): string {
   return toCsv(
@@ -83,16 +104,16 @@ export function reportCsv(rows: ReportRow[], timeZone: string): string {
       r.customer_name,
       r.address,
       r.system_name,
-      r.system_type,
+      SYSTEM_TYPE_LABELS[r.system_type],
       r.engineer_name,
       TASK_STATUS_LABELS[r.status],
       r.original_due_date,
       r.current_due_date,
       r.actual_performed_on,
       r.accepted_at ? dateTimeIn(timeZone, r.accepted_at) : null,
-      r.is_overdue,
-      r.has_deadline_violation,
-      r.is_partial,
+      yesNo(r.is_overdue),
+      yesNo(r.has_deadline_violation),
+      yesNo(r.is_partial),
       remarksOf(r),
       r.review_comment,
       r.cancellation_reason,
