@@ -24,16 +24,31 @@ export function daysInMonth(year: number, month: number): number {
   return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
 
+// Создание Intl.DateTimeFormat дорогое (доли миллисекунды): в CSV на 10 000 строк
+// это секунды. Форматтеры создаются один раз на часовой пояс.
+const formatters = new Map<string, { date: Intl.DateTimeFormat; time: Intl.DateTimeFormat }>();
+function formattersFor(timeZone: string) {
+  let f = formatters.get(timeZone);
+  if (!f) {
+    f = {
+      // en-CA даёт формат YYYY-MM-DD
+      date: new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }),
+      time: new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }),
+    };
+    formatters.set(timeZone, f);
+  }
+  return f;
+}
+
 /** Календарная дата момента времени в часовом поясе tz (для Europe/Moscow — московский день). */
 export function dateIn(timeZone: string, moment: Date): string {
-  // en-CA даёт формат YYYY-MM-DD
-  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(moment);
+  return formattersFor(timeZone).date.format(moment);
 }
 
 /** Дата и время момента в часовом поясе tz: YYYY-MM-DD HH:MM. */
 export function dateTimeIn(timeZone: string, moment: Date): string {
-  const time = new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(moment);
-  return `${dateIn(timeZone, moment)} ${time}`;
+  const f = formattersFor(timeZone);
+  return `${f.date.format(moment)} ${f.time.format(moment)}`;
 }
 
 export function addDays(date: string, days: number): string {
