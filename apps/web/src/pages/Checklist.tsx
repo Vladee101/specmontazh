@@ -129,7 +129,17 @@ export function Checklist() {
         ← Мои задания
       </Link>
       <div className="sm-gap" />
-      <Heading title={`${task.task_number} · ${SYSTEM_TYPE_LABELS[task.system_type]}`} sub={`${task.object_name} / ${task.address}`} actions={<StatusBadge status={task.status} overdue={task.is_overdue} />} />
+      {/* контакты объекта рядом с адресом: читаются из карточки объекта на момент запроса — всегда актуальны */}
+      <Heading
+        title={`${task.task_number} · ${SYSTEM_TYPE_LABELS[task.system_type]}`}
+        sub={
+          <>
+            {task.object_name} / {task.address}
+            {(task.contact_name || task.contact_phone) && <> · {[task.contact_name, task.contact_phone].filter(Boolean).join(', ')}</>}
+          </>
+        }
+        actions={<StatusBadge status={task.status} overdue={task.is_overdue} />}
+      />
 
       {task.status === 'rework' && (
         <div className="sm-warning" style={{ marginBottom: 18 }}>

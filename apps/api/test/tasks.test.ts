@@ -339,3 +339,21 @@ describe('сроки и отмена', () => {
     expect(paged.body.items).toHaveLength(1);
   });
 });
+
+describe('контакты объекта в карточке задания', () => {
+  it('контакты подтягиваются из карточки объекта и меняются вместе с ней', async () => {
+    const { taskId, objectId } = await newTask();
+    expectStatus(await manager.post(`/tasks/${taskId}/assign`, { version: (await getTask(taskId)).version, engineer_id: eng1.user.id }), 200);
+
+    // контакты объекта не заданы
+    let t = (await eng1.client.get(`/tasks/${taskId}`)).body;
+    expect(t.contact_name).toBeNull();
+    expect(t.contact_phone).toBeNull();
+
+    // задание читает контакты из карточки объекта: после редактирования инженер видит новые данные
+    expectStatus(await manager.patch(`/objects/${objectId}`, { version: 1, contact_name: 'Ирина Волкова', contact_phone: '+7 (900) 000-00-01' }), 200);
+    t = (await eng1.client.get(`/tasks/${taskId}`)).body;
+    expect(t.contact_name).toBe('Ирина Волкова');
+    expect(t.contact_phone).toBe('+7 (900) 000-00-01');
+  });
+});

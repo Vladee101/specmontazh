@@ -62,6 +62,8 @@ export async function taskRoutes(app: FastifyInstance) {
   const { ctx } = app;
   const { db } = ctx;
 
+  // имя объекта, адрес и контакты читаются из карточки объекта на момент запроса:
+  // изменение контактов в объекте сразу видно в задании (как название оборудования в BR-07).
   const loadDetails = async (taskId: number) => {
     const task = requireRow(
       await db
@@ -69,10 +71,12 @@ export async function taskRoutes(app: FastifyInstance) {
         .innerJoin('maintenance_task as t', 't.id', 'v.id')
         .innerJoin('maintenance_regulation as r', 'r.id', 't.regulation_id')
         .leftJoin('users as rv', 'rv.id', 't.reviewed_by_id')
+        .innerJoin('service_object as o', 'o.id', 'v.object_id')
         .selectAll('v')
         .select([
           't.version', 't.created_at', 't.started_at', 't.submitted_at', 't.cancelled_at', 't.regulation_id',
           'r.name as regulation_name', 'rv.full_name as reviewed_by_name',
+          'o.contact_name', 'o.contact_phone',
         ])
         .where('v.id', '=', taskId)
         .executeTakeFirst(),

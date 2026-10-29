@@ -38,6 +38,8 @@ export interface TaskCheck {
 export interface TaskDetail extends TaskListItem {
   version: number;
   customer_name: string;
+  contact_name: string | null;
+  contact_phone: string | null;
   accepted_at: string | null;
   engineer_comment: string | null;
   review_comment: string | null;
